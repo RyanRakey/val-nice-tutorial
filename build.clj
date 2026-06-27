@@ -3,6 +3,7 @@
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'val-nice-tutorial/val-nice-tutorial)
+(def version "1.0.0")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def main-ns 'val-nice-tutorial.core)
@@ -13,7 +14,7 @@
 (defn jar [_]
   (b/write-pom {:class-dir class-dir
                 :lib lib
-                :version "0.1.0"
+                :version version
                 :basis basis
                 :src-dirs ["src"]})
   (b/copy-dir {:src-dirs ["src"]
@@ -25,7 +26,7 @@
   (clean nil)
   (b/write-pom {:class-dir class-dir
                 :lib lib
-                :version "0.1.0"
+                :version version
                 :basis basis
                 :src-dirs ["src"]})
   (b/copy-dir {:src-dirs ["src"]
