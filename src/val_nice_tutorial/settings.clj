@@ -30,29 +30,16 @@
                            i))
                        hotkey-options)))
 
-(defn- add-label
-  [panel text]
+(defn- add-component
+  [panel component & {:keys [gridx fill weightx anchor insets]
+                       :or {gridx 1 anchor GridBagConstraints/WEST
+                            insets (Insets. 4 0 4 4)}}]
   (let [c (GridBagConstraints.)]
-    (set! (.gridx c) 0)
-    (set! (.anchor c) GridBagConstraints/WEST)
-    (set! (.insets c) (Insets. 4 4 4 8))
-    (.add panel (JLabel. text) c)))
-
-(defn- add-field
-  [panel component]
-  (let [c (GridBagConstraints.)]
-    (set! (.gridx c) 1)
-    (set! (.fill c) GridBagConstraints/HORIZONTAL)
-    (set! (.weightx c) 1.0)
-    (set! (.insets c) (Insets. 4 0 4 4))
-    (.add panel component c)))
-
-(defn- add-full-width
-  [panel component anchor insets]
-  (let [c (GridBagConstraints.)]
-    (set! (.gridx c) 1)
+    (set! (.gridx c) gridx)
     (set! (.anchor c) anchor)
     (set! (.insets c) insets)
+    (when fill (set! (.fill c) fill))
+    (when weightx (set! (.weightx c) weightx))
     (.add panel component c)))
 
 (defn- build-hotkey-combo
@@ -99,12 +86,36 @@
         (when on-close (on-close))
         (.dispose dialog)))))
 
+(defn- bind-start-stop
+  [start-btn stop-btn status-label on-start on-stop]
+  (.addActionListener start-btn
+                      (reify ActionListener
+                        (actionPerformed [_ _]
+                          (on-start)
+                          (.setText status-label "Running")
+                          (.setForeground status-label green))))
+  (.addActionListener stop-btn
+                      (reify ActionListener
+                        (actionPerformed [_ _]
+                          (on-stop)
+                          (.setText status-label "Stopped")
+                          (.setForeground status-label red)))))
+
+(defn- show-dialog
+  [dialog panel]
+  (doto dialog
+    (.add panel)
+    (.pack)
+    (.setResizable false)
+    (.setLocationRelativeTo nil)
+    (.setVisible true)))
+
 (defn show-settings
   [app-state on-start on-stop on-restart on-close]
   (SwingUtilities/invokeLater
    (fn []
      (let [config (:config @app-state)
-           dialog (doto (JDialog.) (.setTitle "Val Nice Tutorial Settings"))
+           dialog (JDialog.)
            panel (JPanel. (GridBagLayout.))
 
            {:keys [status-label start-btn stop-btn]} (build-status-section app-state)
@@ -113,38 +124,23 @@
            msg-field (JTextField. (:message config) 20)
            save-btn (JButton. "Save & Close")]
 
-       (add-label panel "Status:")
-       (add-full-width panel status-label GridBagConstraints/WEST (Insets. 4 0 4 4))
-       (add-full-width panel (doto (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))
-                               (.add start-btn) (.add stop-btn))
-                       GridBagConstraints/WEST (Insets. 4 0 4 4))
-       (add-label panel "Trigger Key:")
-       (add-field panel hotkey-combo)
-       (add-label panel "Chat Mode:")
-       (add-field panel chat-panel)
-       (add-label panel "Message:")
-       (add-field panel msg-field)
-       (add-full-width panel save-btn GridBagConstraints/EAST (Insets. 12 0 4 4))
+       (.setTitle dialog "Val Nice Tutorial Settings")
+       (.setDefaultCloseOperation dialog JDialog/DISPOSE_ON_CLOSE)
 
-       (.addActionListener start-btn
-                           (reify ActionListener
-                             (actionPerformed [_ _]
-                               (on-start)
-                               (.setText status-label "Running")
-                               (.setForeground status-label green))))
-       (.addActionListener stop-btn
-                           (reify ActionListener
-                             (actionPerformed [_ _]
-                               (on-stop)
-                               (.setText status-label "Stopped")
-                               (.setForeground status-label red))))
+       (add-component panel (JLabel. "Status:") :gridx 0 :insets (Insets. 4 4 4 8))
+       (add-component panel status-label)
+       (add-component panel (doto (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))
+                                (.add start-btn) (.add stop-btn)))
+       (add-component panel (JLabel. "Trigger Key:") :gridx 0 :insets (Insets. 4 4 4 8))
+       (add-component panel hotkey-combo :fill GridBagConstraints/HORIZONTAL :weightx 1.0)
+       (add-component panel (JLabel. "Chat Mode:") :gridx 0 :insets (Insets. 4 4 4 8))
+       (add-component panel chat-panel :fill GridBagConstraints/HORIZONTAL :weightx 1.0)
+       (add-component panel (JLabel. "Message:") :gridx 0 :insets (Insets. 4 4 4 8))
+       (add-component panel msg-field :fill GridBagConstraints/HORIZONTAL :weightx 1.0)
+       (add-component panel save-btn :anchor GridBagConstraints/EAST :insets (Insets. 12 0 4 4))
+
+       (bind-start-stop start-btn stop-btn status-label on-start on-stop)
        (.addActionListener save-btn
                            (build-save-action dialog hotkey-combo msg-field all-rd
                                               app-state on-restart on-close))
-       (.setDefaultCloseOperation dialog JDialog/DISPOSE_ON_CLOSE)
-       (.add dialog panel)
-       (.pack dialog)
-       (.setResizable dialog false)
-       (.setLocationRelativeTo dialog nil)
-       (.setVisible dialog true)
-       dialog))))
+       (show-dialog dialog panel)))))

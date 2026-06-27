@@ -17,3 +17,6 @@
 
 (defn add-listener! [l] (GlobalScreen/addNativeKeyListener l))
 (defn remove-listener! [l] (GlobalScreen/removeNativeKeyListener l))
+
+(defn register-hook! [] (GlobalScreen/registerNativeHook))
+(defn unregister-hook! [] (GlobalScreen/unregisterNativeHook))

@@ -4,17 +4,13 @@
             [val-nice-tutorial.listener :as listener]
             [val-nice-tutorial.tray :as tray]
             [val-nice-tutorial.settings :as settings])
-  (:import (com.github.kwhat.jnativehook GlobalScreen NativeHookException)
-           (com.github.kwhat.jnativehook.keyboard NativeKeyEvent))
+  (:import (com.github.kwhat.jnativehook NativeHookException))
   (:gen-class))
 
 (defonce app-state
   (atom {:running? false
          :listener nil
-         :config {:key-code NativeKeyEvent/VC_1
-                  :key-location NativeKeyEvent/KEY_LOCATION_NUMPAD
-                  :message "nice tutorial"
-                  :chat-mode :all}}))
+         :config config/default-config}))
 
 (defn start!
   []
@@ -43,7 +39,7 @@
     (swap! app-state assoc :config saved-config))
   (println "Valorant Nice Tutorial utility started.")
   (try
-    (GlobalScreen/registerNativeHook)
+    (listener/register-hook!)
     (start!)
     (tray/setup-tray! app-state
                       start! stop!
@@ -57,4 +53,4 @@
       (System/exit 1))
     (finally
       (stop!)
-      (GlobalScreen/unregisterNativeHook))))
+      (listener/unregister-hook!))))
