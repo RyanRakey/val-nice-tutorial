@@ -1,6 +1,13 @@
 (ns val-nice-tutorial.robot
+  (:require [val-nice-tutorial.config :as config])
   (:import (java.awt Robot)
            (java.awt.event KeyEvent)))
+
+(def initial-chat-delay-ms 200)
+(def chat-activation-delay-ms 150)
+(def prefix-typing-delay-ms 50)
+(def char-typing-delay-ms 15)
+(def send-delay-ms 100)
 
 (defn char->key-code
   [c]
@@ -22,9 +29,9 @@
 
 (defn type-text!
   [robot text]
-  (doseq [c text]
-    (press-char! robot c)
-    (.delay robot 15)))
+   (doseq [c text]
+     (press-char! robot c)
+     (.delay robot char-typing-delay-ms)))
 
 (defn press-enter!
   [robot]
@@ -33,18 +40,14 @@
 
 (defn create-robot [] (Robot.))
 
-(defn message-prefix
-  [chat-mode]
-  (case chat-mode :team "/team " "/all "))
-
 (defn send-message
   ([config] (send-message (create-robot) config))
   ([robot {:keys [chat-mode message]}]
-   (.delay robot 200)
+   (.delay robot initial-chat-delay-ms)
    (press-enter! robot)
-   (.delay robot 150)
-   (type-text! robot (message-prefix chat-mode))
-   (.delay robot 50)
+   (.delay robot chat-activation-delay-ms)
+   (type-text! robot (config/message-prefix chat-mode))
+   (.delay robot prefix-typing-delay-ms)
    (type-text! robot message)
-   (.delay robot 100)
+   (.delay robot send-delay-ms)
    (press-enter! robot)))

@@ -58,12 +58,14 @@ When encountering unbalanced parentheses errors in Clojure files, use the `cloju
 
 ```
 src/val_nice_tutorial/
-├── core.clj          — state atom, Robot simulation, listener factory, start/stop lifecycle
-├── config.clj        — load/save config from ~/.val-nice-tutorial/config.edn
+├── core.clj          — app-state atom, lifecycle (start/stop/restart), -main entry point
+├── config.clj        — load/save config from ~/.val-nice-tutorial/config.edn, default config, chat prefix formatting
+├── listener.clj      — NativeKeyListener factory, GlobalScreen add/remove listener, hook registration
+├── robot.clj         — Robot key simulation (char mapping, typing, send-message with named delay constants)
 ├── tray.clj          — system tray icon (Start/Stop/Settings/Quit)
 └── settings.clj      — Swing settings dialog (hotkey, chat mode, message)
 test/val_nice_tutorial/
-├── core_test.clj     — unit tests (char mapping, key sequences, listener dispatch, lifecycle)
+├── core_test.clj     — unit tests (char mapping, key sequences, message prefix, listener dispatch, lifecycle)
 └── test_runner.clj   — test runner entry point
 ```
 
@@ -75,4 +77,6 @@ test/val_nice_tutorial/
 - **System tray** icon sits in the notification area; double-click or right-click for controls
 - **Settings dialog** lets the user change: trigger key (dropdown), chat mode (All/Team), message text
 - **Start/Stop lifecycle** enables/disables the listener cleanly without restarting the app
-- **Testability**: `send-message` accepts an optional `Robot` argument; `create-robot`, `add-listener!`, `remove-listener!` are separate vars redefinable in tests
+- **Testability**: `send-message` accepts an optional `Robot` argument; `create-robot`, `add-listener!`, `remove-listener!`, `register-hook!`, `unregister-hook!` are separate vars redefinable in tests
+- **Native hook lifecycle** (`register-hook!` / `unregister-hook!`) lives in `listener.clj` alongside listener management, keeping `core.clj` free of infrastructure concerns
+- **Chat prefix** (`/all` / `/team`) formatted by `config/message-prefix` rather than in the robot typing logic, keeping formatting with configuration

@@ -23,6 +23,10 @@
            (catch Exception _ default-config))
       default-config)))
 
+(defn message-prefix
+  [chat-mode]
+  (case chat-mode :team "/team " "/all "))
+
 (defn save-config
   [config]
   (let [f (File. config-file)

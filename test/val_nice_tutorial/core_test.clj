@@ -1,6 +1,7 @@
 (ns val-nice-tutorial.core-test
   (:require [clojure.test :refer [deftest is testing]]
             [val-nice-tutorial.core :as sut]
+            [val-nice-tutorial.config :as config]
             [val-nice-tutorial.robot :as robot]
             [val-nice-tutorial.listener :as listener])
   (:import (com.github.kwhat.jnativehook.keyboard NativeKeyEvent)
@@ -82,9 +83,9 @@
 
 (deftest message-prefix-test
   (testing "all chat prefix is \"/all \""
-    (is (= "/all " (robot/message-prefix :all))))
+    (is (= "/all " (config/message-prefix :all))))
   (testing "team chat prefix is \"/team \""
-    (is (= "/team " (robot/message-prefix :team)))))
+    (is (= "/team " (config/message-prefix :team)))))
 
 (deftest send-message-test
   (testing "sends \"/all nice tutorial\" with default config"
