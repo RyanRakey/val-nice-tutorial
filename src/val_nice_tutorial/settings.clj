@@ -1,10 +1,13 @@
 (ns val-nice-tutorial.settings
   (:import (javax.swing JDialog JPanel JLabel JTextField JButton
                         JRadioButton ButtonGroup JComboBox SwingUtilities)
-           (java.awt GridBagLayout GridBagConstraints Insets FlowLayout)
+           (java.awt GridBagLayout GridBagConstraints Insets FlowLayout Font Color)
            (java.awt.event ActionListener)
            (com.github.kwhat.jnativehook.keyboard NativeKeyEvent))
   (:require [val-nice-tutorial.config :as config]))
+
+(def ^:private green (Color. 0 153 51))
+(def ^:private red (Color. 153 0 0))
 
 (def hotkey-options
   [{:label "Numpad 1" :key-code NativeKeyEvent/VC_1 :key-location NativeKeyEvent/KEY_LOCATION_NUMPAD}
@@ -44,6 +47,58 @@
     (set! (.insets c) (Insets. 4 0 4 4))
     (.add panel component c)))
 
+(defn- add-full-width
+  [panel component anchor insets]
+  (let [c (GridBagConstraints.)]
+    (set! (.gridx c) 1)
+    (set! (.anchor c) anchor)
+    (set! (.insets c) insets)
+    (.add panel component c)))
+
+(defn- build-hotkey-combo
+  [config]
+  (let [model (javax.swing.DefaultComboBoxModel.)
+        combo (JComboBox. model)]
+    (doseq [opt hotkey-options] (.addElement model (:label opt)))
+    (when-let [idx (find-hotkey-index config)]
+      (.setSelectedIndex combo idx))
+    combo))
+
+(defn- build-chat-mode-panel
+  [config]
+  (let [all-rd (JRadioButton. "All Chat (/all)" (= :all (:chat-mode config)))
+        team-rd (JRadioButton. "Team Chat (/team)" (= :team (:chat-mode config)))
+        _ (doto (ButtonGroup.) (.add all-rd) (.add team-rd))
+        panel (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))]
+    (.add panel all-rd)
+    (.add panel team-rd)
+    {:chat-panel panel :all-rd all-rd}))
+
+(defn- build-status-section
+  [app-state]
+  (let [running? (:running? @app-state)]
+    {:status-label (doto (JLabel. (if running? "Running" "Stopped"))
+                     (.setFont (.deriveFont (.getFont (JLabel.)) Font/BOLD (float 14)))
+                     (.setForeground (if running? green red)))
+     :start-btn (JButton. "Start")
+     :stop-btn (JButton. "Stop")}))
+
+(defn- build-save-action
+  [dialog hotkey-combo msg-field all-rd app-state on-restart on-close]
+  (reify ActionListener
+    (actionPerformed [_ _]
+      (let [selected-idx (.getSelectedIndex hotkey-combo)
+            hotkey (nth hotkey-options selected-idx)
+            new-config {:key-code (:key-code hotkey)
+                        :key-location (:key-location hotkey)
+                        :message (.getText msg-field)
+                        :chat-mode (if (.isSelected all-rd) :all :team)}]
+        (config/save-config new-config)
+        (swap! app-state assoc :config new-config)
+        (on-restart)
+        (when on-close (on-close))
+        (.dispose dialog)))))
+
 (defn show-settings
   [app-state on-start on-stop on-restart on-close]
   (SwingUtilities/invokeLater
@@ -52,75 +107,40 @@
            dialog (doto (JDialog.) (.setTitle "Val Nice Tutorial Settings"))
            panel (JPanel. (GridBagLayout.))
 
-           status-label (doto (JLabel. (if (:running? @app-state) "Running" "Stopped"))
-                          (.setFont (.deriveFont (.getFont (JLabel.)) java.awt.Font/BOLD (float 14)))
-                          (.setForeground (if (:running? @app-state)
-                                            (java.awt.Color. 0 153 51)
-                                            (java.awt.Color. 153 0 0))))
-           start-btn (JButton. "Start")
-           stop-btn (JButton. "Stop")
-           hotkey-combo (let [model (javax.swing.DefaultComboBoxModel.)
-                              combo (JComboBox. model)]
-                          (doseq [opt hotkey-options] (.addElement model (:label opt)))
-                          (when-let [idx (find-hotkey-index config)]
-                            (.setSelectedIndex combo idx))
-                          combo)
-           all-rd (JRadioButton. "All Chat (/all)" (= :all (:chat-mode config)))
-           team-rd (JRadioButton. "Team Chat (/team)" (= :team (:chat-mode config)))
-           _ (doto (ButtonGroup.) (.add all-rd) (.add team-rd))
-           chat-panel (doto (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))
-                        (.add all-rd) (.add team-rd))
+           {:keys [status-label start-btn stop-btn]} (build-status-section app-state)
+           hotkey-combo (build-hotkey-combo config)
+           {:keys [chat-panel all-rd]} (build-chat-mode-panel config)
            msg-field (JTextField. (:message config) 20)
            save-btn (JButton. "Save & Close")]
 
        (add-label panel "Status:")
-       (let [c (GridBagConstraints.)]
-         (set! (.gridx c) 1) (set! (.anchor c) GridBagConstraints/WEST)
-         (set! (.insets c) (Insets. 4 0 4 4))
-         (.add panel status-label c))
-       (let [c (GridBagConstraints.)]
-         (set! (.gridx c) 1) (set! (.anchor c) GridBagConstraints/WEST)
-         (set! (.insets c) (Insets. 4 0 4 4))
-         (.add panel (doto (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))
-                       (.add start-btn) (.add stop-btn)) c))
+       (add-full-width panel status-label GridBagConstraints/WEST (Insets. 4 0 4 4))
+       (add-full-width panel (doto (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))
+                               (.add start-btn) (.add stop-btn))
+                       GridBagConstraints/WEST (Insets. 4 0 4 4))
        (add-label panel "Trigger Key:")
        (add-field panel hotkey-combo)
        (add-label panel "Chat Mode:")
        (add-field panel chat-panel)
        (add-label panel "Message:")
        (add-field panel msg-field)
-
-       (let [c (GridBagConstraints.)]
-         (set! (.gridx c) 1) (set! (.anchor c) GridBagConstraints/EAST)
-         (set! (.insets c) (Insets. 12 0 4 4))
-         (.add panel save-btn c))
+       (add-full-width panel save-btn GridBagConstraints/EAST (Insets. 12 0 4 4))
 
        (.addActionListener start-btn
                            (reify ActionListener
                              (actionPerformed [_ _]
                                (on-start)
                                (.setText status-label "Running")
-                               (.setForeground status-label (java.awt.Color. 0 153 51)))))
+                               (.setForeground status-label green))))
        (.addActionListener stop-btn
                            (reify ActionListener
                              (actionPerformed [_ _]
                                (on-stop)
                                (.setText status-label "Stopped")
-                               (.setForeground status-label (java.awt.Color. 153 0 0)))))
+                               (.setForeground status-label red))))
        (.addActionListener save-btn
-                           (reify ActionListener
-                             (actionPerformed [_ _]
-                               (let [selected-idx (.getSelectedIndex hotkey-combo)
-                                     hotkey (nth hotkey-options selected-idx)
-                                     new-config {:key-code (:key-code hotkey)
-                                                 :key-location (:key-location hotkey)
-                                                 :message (.getText msg-field)
-                                                 :chat-mode (if (.isSelected all-rd) :all :team)}]
-                                 (config/save-config new-config)
-                                 (swap! app-state assoc :config new-config)
-                                 (on-restart)
-                                 (when on-close (on-close))
-                                 (.dispose dialog)))))
+                           (build-save-action dialog hotkey-combo msg-field all-rd
+                                              app-state on-restart on-close))
        (.setDefaultCloseOperation dialog JDialog/DISPOSE_ON_CLOSE)
        (.add dialog panel)
        (.pack dialog)
