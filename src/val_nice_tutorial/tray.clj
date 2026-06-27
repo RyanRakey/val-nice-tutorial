@@ -27,6 +27,22 @@
   (.addSeparator popup)
   (.add popup quit-item))
 
+(defn- menu-item ^MenuItem [label] (MenuItem. label))
+
+(defn- action-listener ^java.awt.event.ActionListener [f]
+  (reify java.awt.event.ActionListener
+    (actionPerformed [_ _] (f))))
+
+(defn- make-update-fn
+  [popup {:keys [start-item stop-item settings-item quit-item]} app-state]
+  (fn []
+    (update-tray-menu popup start-item stop-item settings-item quit-item
+                      (:running? @app-state))))
+
+(defn- bind-start-stop
+  [item on-fn update-fn]
+  (.addActionListener item (action-listener #(do (on-fn) (SwingUtilities/invokeLater update-fn)))))
+
 (defn setup-tray!
   [app-state on-start on-stop on-settings]
   (when (SystemTray/isSupported)
@@ -35,26 +51,17 @@
        (let [tray (SystemTray/getSystemTray)
              icon (TrayIcon. (create-icon) "Val Nice Tutorial")
              popup (PopupMenu.)
-             start-item (MenuItem. "Start")
-             stop-item (MenuItem. "Stop")
-             settings-item (MenuItem. "Settings")
-             quit-item (MenuItem. "Quit")
-             update-fn (fn []
-                         (update-tray-menu popup start-item stop-item
-                                           settings-item quit-item
-                                           (:running? @app-state)))]
-         (.addActionListener start-item
-                             (reify java.awt.event.ActionListener
-                               (actionPerformed [_ _] (on-start) (SwingUtilities/invokeLater update-fn))))
-         (.addActionListener stop-item
-                             (reify java.awt.event.ActionListener
-                               (actionPerformed [_ _] (on-stop) (SwingUtilities/invokeLater update-fn))))
-         (.addActionListener settings-item
-                             (reify java.awt.event.ActionListener
-                               (actionPerformed [_ _] (on-settings update-fn))))
-         (.addActionListener quit-item
-                             (reify java.awt.event.ActionListener
-                               (actionPerformed [_ _] (on-stop) (System/exit 0))))
+             items {:start-item (menu-item "Start")
+                    :stop-item (menu-item "Stop")
+                    :settings-item (menu-item "Settings")
+                    :quit-item (menu-item "Quit")}
+             update-fn (make-update-fn popup items app-state)]
+         (bind-start-stop (:start-item items) on-start update-fn)
+         (bind-start-stop (:stop-item items) on-stop update-fn)
+         (.addActionListener (:settings-item items)
+                             (action-listener #(on-settings update-fn)))
+         (.addActionListener (:quit-item items)
+                             (action-listener #(do (on-stop) (System/exit 0))))
          (update-fn)
          (.setPopupMenu icon popup)
          (.add tray icon)

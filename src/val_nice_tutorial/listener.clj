@@ -1,7 +1,7 @@
 (ns val-nice-tutorial.listener
   (:require [val-nice-tutorial.robot :as robot])
   (:import (com.github.kwhat.jnativehook GlobalScreen)
-            (com.github.kwhat.jnativehook.keyboard NativeKeyListener)))
+           (com.github.kwhat.jnativehook.keyboard NativeKeyListener)))
 
 (defn create-listener
   [config]
