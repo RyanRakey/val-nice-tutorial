@@ -82,3 +82,7 @@ test/val_nice_tutorial/
 build.clj             — tools.build script for jar/uberjar
 deps.edn              — project dependencies and aliases
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
