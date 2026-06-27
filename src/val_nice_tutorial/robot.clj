@@ -29,9 +29,9 @@
 
 (defn type-text!
   [robot text]
-   (doseq [c text]
-     (press-char! robot c)
-     (.delay robot char-typing-delay-ms)))
+  (doseq [c text]
+    (press-char! robot c)
+    (.delay robot char-typing-delay-ms)))
 
 (defn press-enter!
   [robot]

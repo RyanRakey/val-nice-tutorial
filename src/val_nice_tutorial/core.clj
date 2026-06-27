@@ -1,6 +1,5 @@
 (ns val-nice-tutorial.core
   (:require [val-nice-tutorial.config :as config]
-            [val-nice-tutorial.robot :as robot]
             [val-nice-tutorial.listener :as listener]
             [val-nice-tutorial.tray :as tray]
             [val-nice-tutorial.settings :as settings])
@@ -47,6 +46,7 @@
                         (settings/show-settings app-state
                                                 start! stop! restart!
                                                 update-fn)))
+    (settings/show-settings app-state start! stop! restart! nil)
     @(promise)
     (catch NativeHookException e
       (println "Failed to register native hook:" (.getMessage e))

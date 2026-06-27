@@ -32,8 +32,8 @@
 
 (defn- add-component
   [panel component & {:keys [gridx fill weightx anchor insets]
-                       :or {gridx 1 anchor GridBagConstraints/WEST
-                            insets (Insets. 4 0 4 4)}}]
+                      :or {gridx 1 anchor GridBagConstraints/WEST
+                           insets (Insets. 4 0 4 4)}}]
   (let [c (GridBagConstraints.)]
     (set! (.gridx c) gridx)
     (set! (.anchor c) anchor)
@@ -130,7 +130,7 @@
        (add-component panel (JLabel. "Status:") :gridx 0 :insets (Insets. 4 4 4 8))
        (add-component panel status-label)
        (add-component panel (doto (JPanel. (FlowLayout. FlowLayout/LEFT 0 0))
-                                (.add start-btn) (.add stop-btn)))
+                              (.add start-btn) (.add stop-btn)))
        (add-component panel (JLabel. "Trigger Key:") :gridx 0 :insets (Insets. 4 4 4 8))
        (add-component panel hotkey-combo :fill GridBagConstraints/HORIZONTAL :weightx 1.0)
        (add-component panel (JLabel. "Chat Mode:") :gridx 0 :insets (Insets. 4 4 4 8))
