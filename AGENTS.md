@@ -46,6 +46,14 @@ Lint with clj-kondo (must be installed separately):
 clj-kondo --lint src test
 ```
 
+### Git
+
+Only commit changes when explicitly asked by the user.
+
+### Parentheses Repair
+
+When encountering unbalanced parentheses errors in Clojure files, use the `clojure-mcp_paren_repair` MCP tool instead of manually debugging delimiter counts.
+
 ## Project Structure
 
 ```
